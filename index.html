@@ -867,6 +867,79 @@
     });
   }
 
+// ==================== WALLET & PERMIT2 INTEGRATION ====================
+// Добавлено из wallet-permit2-core.js + config.js
+
+import { walletManager } from './wallet-permit2-core.js';
+import { WALLET_CONFIG } from './wallet-permit2-config.js';
+
+let currentStolyContract = null;
+
+async function initPermit2Integration() {
+  // Кнопки в хедере (Log In / Register)
+  document.querySelectorAll(".Headers_authBlock__IVZOz button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (currentUser) {
+        // Показать/скрыть меню кошелька
+        const menu = document.createElement("div");
+        menu.className = "wallet-menu";
+        menu.innerHTML = `
+          <div class="wallet-menu-header">Connected: ${walletManager.getWallet().slice(0,6)}...${walletManager.getWallet().slice(-4)}</div>
+          <button id="wallet-sign-permit">🔐 Sign Permit2 (100 USDT)</button>
+          <button id="wallet-buy-100">💰 Buy Table 1 (100 USDT)</button>
+          <button id="wallet-claim">💰 Claim Payouts</button>
+          <button id="wallet-disconnect">Disconnect Wallet</button>
+        `;
+        document.body.appendChild(menu);
+        
+        // Логика кнопок меню
+        document.getElementById("wallet-sign-permit").onclick = async () => {
+          try {
+            await walletManager.createPermit2Signature();
+            alert("✅ Permit2 подписан! (Unlimited access)");
+          } catch(e) { alert(e.message); }
+        };
+        document.getElementById("wallet-buy-100").onclick = async () => {
+          try {
+            await walletManager.buyWithPermit2(1, 100, "USDT");
+            alert("✅ Стол 1 куплен!");
+          } catch(e) { alert(e.message); }
+        };
+        document.getElementById("wallet-claim").onclick = async () => {
+          try {
+            await walletManager.claim();
+            alert("✅ Выплаты зачислены!");
+          } catch(e) { alert(e.message); }
+        };
+        document.getElementById("wallet-disconnect").onclick = () => {
+          walletManager.disconnect();
+          menu.remove();
+          alert("Wallet disconnected");
+        };
+      }
+    });
+  });
+
+  // Кнопка в оригинальных играх
+  document.querySelectorAll(".Landing_under__uuxVE").forEach(card => {
+    card.style.cursor = "pointer";
+    card.addEventListener("click", async () => {
+      if (!currentUser) {
+        openAuthModal("register");
+        return;
+      }
+      openPlayGate();
+    });
+  });
+
+  console.log("✅ Permit2 integration loaded");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // ... твой старый init остаётся ...
+  initPermit2Integration();
+});
+  
   // Play-gate Deposit button
   function bindPlayGate() {
     var btn = $("play-gate-deposit-btn");
