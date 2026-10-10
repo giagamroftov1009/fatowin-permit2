@@ -897,22 +897,34 @@
     if (saved) currentUser = JSON.parse(saved);
   } catch (e) {}
 
- function init() {
-  captureHero();
-  bindUserBarEvents();
-  bindPlayGate();
-  updateUserBar();
-  updateHero();
-  wireButtons();
-  wirePlayCards();
+ 
+  function init() {
+    captureHero();
+    bindUserBarEvents();
+    bindPlayGate();
+    updateUserBar();
+    updateHero();
+    wireButtons();
+    wirePlayCards();
+  }
 
-  document.addEventListener("DOMContentLoaded", init);
-  setTimeout(init, 400);
-  setTimeout(init, 1200);
-  setTimeout(init, 2500);
+  // Initialize only once.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, {
+      once: true
+    });
+  } else {
+    init();
+  }
 
   document.addEventListener("keydown", function(e) {
-    if (e.key === "Enter" && $("auth-overlay").classList.contains("open")) submitAuth();
+    if (
+      e.key === "Enter" &&
+      $("auth-overlay").classList.contains("open")
+    ) {
+      submitAuth();
+    }
+
     if (e.key === "Escape") {
       closeAuthModal();
       closeCryptoModal();
@@ -921,77 +933,102 @@
     }
   });
 })();
+
 </script>
     
-<script type="module">
-  import { BrowserProvider } from
-    "https://cdn.jsdelivr.net/npm/ethers@6.7.1/+esm";
 
+<script>
+(() => {
   const button = document.getElementById("connect-wallet-btn");
   const label = document.getElementById("wallet-button-label");
   const defaultLabel = "Connect Wallet";
 
   if (!button || !label) {
     console.error("Wallet button or label not found.");
-  } else {
-    function updateWalletLabel(address) {
-      label.textContent =
-        address.slice(0, 6) + "..." + address.slice(-4);
+    return;
+  }
 
-      button.title = address;
-      button.dataset.walletAddress = address;
-    }
+  function showWallet(address) {
+    label.textContent =
+      address.slice(0, 6) + "..." + address.slice(-4);
 
-    button.addEventListener("click", async () => {
-      if (button.disabled) return;
+    button.title = address;
+    button.dataset.walletAddress = address;
+  }
 
-      button.disabled = true;
-      label.textContent = "Connecting...";
+  function clearWallet() {
+    label.textContent = defaultLabel;
+    button.title = "";
+    delete button.dataset.walletAddress;
+  }
 
-      try {
-        if (!window.ethereum) {
-          throw new Error(
-            "MetaMask is not detected. Install or enable your wallet."
-          );
-        }
+  // Restore an account already authorized in the wallet.
+  async function restoreWallet() {
+    if (!window.ethereum) return;
 
-        const provider = new BrowserProvider(window.ethereum);
-
-        await provider.send("eth_requestAccounts", []);
-
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-
-        updateWalletLabel(address);
-
-        console.log("Wallet connected:", address);
-      } catch (error) {
-        console.error("Wallet connection failed:", error);
-
-        label.textContent = defaultLabel;
-
-        alert(
-          error?.shortMessage ||
-          error?.message ||
-          "Failed to connect wallet."
-        );
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    if (window.ethereum?.on) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        if (!accounts || accounts.length === 0) {
-          label.textContent = defaultLabel;
-          button.title = "";
-          delete button.dataset.walletAddress;
-        } else {
-          updateWalletLabel(accounts[0]);
-        }
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts"
       });
+
+      if (accounts && accounts.length > 0) {
+        showWallet(accounts[0]);
+      } else {
+        clearWallet();
+      }
+    } catch (error) {
+      console.error("Could not restore wallet:", error);
     }
   }
+
+  button.addEventListener("click", async () => {
+    if (button.disabled) return;
+
+    if (!window.ethereum) {
+      alert("Установи или включи MetaMask.");
+      return;
+    }
+
+    button.disabled = true;
+    label.textContent = "Connecting...";
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No wallet account selected.");
+      }
+
+      showWallet(accounts[0]);
+    } catch (error) {
+      console.error("Wallet connection failed:", error);
+      label.textContent = defaultLabel;
+
+      alert(
+        error?.message || "Не удалось подключить кошелёк."
+      );
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  if (window.ethereum?.on) {
+    window.ethereum.on("accountsChanged", (accounts) => {
+      if (accounts && accounts.length > 0) {
+        showWallet(accounts[0]);
+      } else {
+        clearWallet();
+      }
+    });
+  }
+
+  // Check existing wallet permissions immediately and on page restore.
+  restoreWallet();
+  window.addEventListener("pageshow", restoreWallet);
+})();
 </script>
+
 </body>
 </html>
