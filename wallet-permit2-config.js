@@ -10,7 +10,7 @@ export const WALLET_CONFIG = {
   CURRENT_CHAIN_ID: 421614, // Change to 42161 for mainnet
 
   // Contract addresses - UPDATE THESE AFTER DEPLOYMENT
-  STOLY_CONTRACT_ADDRESS: "0x", // Your deployed Stoly contract
+  STOLY_CONTRACT_ADDRESS: "0x75c6320E7C562a3a27E1507203aD5cE5D4dFe7B7", // Stoly contract on Arbitrum Sepolia
   USDT_TOKEN_ADDRESS: "0xFECa406dA9727A25E71e732F9961f680059eE802", // Arbitrum Sepolia test USDT
 
   // Permit2 (same on all chains)
